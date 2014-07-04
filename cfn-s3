@@ -1,0 +1,64 @@
+{
+  "Outputs": {
+    "BucketName": {
+      "Description": "Name of S3 bucket to hold website content",
+      "Value": {
+        "Ref": "S3Bucket"
+      }
+    }
+  },
+  "Resources": {
+    "S3BucketPolicy": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "S3Bucket"
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Principal": {
+                "AWS": {
+                  "Ref": "InstanceProfile"
+                }
+              },
+              "Effect": "Allow",
+              "Sid": "UploadObject"
+            }
+          ],
+          "Id": "UploadObject",
+          "Version": "2012-10-17"
+        },
+        "Bucket": {
+          "Ref": "S3Bucket"
+        }
+      },
+      "Type": "AWS::S3::BucketPolicy"
+    },
+    "S3Bucket": {
+      "Properties": {
+        "AccessControl": "PublicRead"
+      },
+      "Type": "AWS::S3::Bucket"
+    }
+  },
+  "Parameters": {
+    "InstanceProfile": {
+      "Description": "InstanceProfile to allow access to upload to this bucket",
+      "Type": "String"
+    }
+  },
+  "Description": "Create an S3 bucket which allows the InstanceProfile to upload objects",
+  "AWSTemplateFormatVersion": "2010-09-09"
+}

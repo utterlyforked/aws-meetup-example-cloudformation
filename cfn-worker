@@ -1,0 +1,135 @@
+{
+  "Resources": {
+    "WorkerAutoScalingGroup": {
+      "Properties": {
+        "MaxSize": "3",
+        "MinSize": "1",
+        "LaunchConfigurationName": {
+          "Ref": "WorkerLaunchConfiguration"
+        },
+        "AvailabilityZones": [
+          "eu-west-1a"
+        ],
+        "Tags": [
+          {
+            "PropagateAtLaunch": "true",
+            "Value": "worker",
+            "Key": "role"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": "aws-meetup-example",
+            "Key": "job"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": {
+              "Ref": "TargetS3Bucket"
+            },
+            "Key": "targetbucket"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": {
+              "Ref": "SourceSQSQueue"
+            },
+            "Key": "sourcequeue"
+          }
+        ]
+      },
+      "Version": "2009-05-15",
+      "Type": "AWS::AutoScaling::AutoScalingGroup"
+    },
+    "WorkerLaunchConfiguration": {
+      "Properties": {
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "LaunchConfigurationSecurityGroup"
+          }
+        ],
+        "KeyName": "aws-meetup-example",
+        "InstanceType": "m3.medium",
+        "ImageId": "ami-0318e374",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",
+                "yum update -y aws-cfn-bootstrap\n",
+                "# Kickstart the cloudinit process\n",
+                "/opt/aws/bin/cfn-init -s ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                " -r WorkerLaunchConfiguration ",
+                "    --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " || error_exit 'Failed to run cfn-init'\n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "config": {
+            "packages": {
+              "yum": {
+                "jq": [],
+                "cowsay": []
+              }
+            },
+            "sources": {
+              "/opt/worker": "https://github.com/utterlyforked/aws-meetup-example/tarball/master"
+            },
+            "commands": {
+              "worker": {
+                "ignoreErrors": "true",
+                "cwd": "/opt/worker",
+                "command": "./worker"
+              }
+            }
+          }
+        },
+        "Comment1": "Configure the bootstrap helpers to install the worked code"
+      },
+      "Type": "AWS::AutoScaling::LaunchConfiguration"
+    },
+    "LaunchConfigurationSecurityGroup": {
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "ToPort": "22",
+            "FromPort": "22",
+            "IpProtocol": "tcp"
+          }
+        ],
+        "GroupDescription": "SSH access only"
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    }
+  },
+  "Parameters": {
+    "SourceSQSQueue": {
+      "Description": "SQS queue to get jobs from",
+      "Type": "String"
+    },
+    "TargetS3Bucket": {
+      "Description": "S3 Bucket Name to store objects in",
+      "Type": "String"
+    },
+    "InstanceProfile": {
+      "Description": "InstanceProfile to assign to node. Must already exist",
+      "Type": "String"
+    }
+  },
+  "Description": "Creates an EC2 autoscaling group with associated instance profile",
+  "AWSTemplateFormatVersion": "2010-09-09"
+}

@@ -1,0 +1,74 @@
+{
+  "Resources": {
+    "WorkerRoleProfile": {
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "WorkerRole"
+          }
+        ],
+        "Path": "/"
+      },
+      "Type": "AWS::IAM::InstanceProfile"
+    },
+    "WorkerRolePolicy": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Resource": [
+                "*"
+              ],
+              "Action": [
+                "ec2:DescribeTags"
+              ],
+              "Effect": "Allow",
+              "Sid": "AllowEC2Tags"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "WorkerRolePolicy",
+        "Roles": [
+          {
+            "Ref": "WorkerRole"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Policy"
+    },
+    "WorkerRole": {
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Effect": "Allow"
+            }
+          ]
+        }
+      },
+      "Type": "AWS::IAM::Role"
+    }
+  },
+  "Outputs": {
+    "InstanceProfile": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkerRoleProfile",
+          "Arn"
+        ]
+      }
+    }
+  },
+  "Description": "Creates an IAM role and associated policy for an EC2 node",
+  "AWSTemplateFormatVersion": "2010-09-09"
+}

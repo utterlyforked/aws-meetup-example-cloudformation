@@ -1,0 +1,53 @@
+{
+  "Resources": {
+    "QueueDepthAlarm": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "ScaleUpPolicy"
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold",
+        "AlarmDescription": "Alarm if queue depth grows beyond 10 messages",
+        "Namespace": "AWS/SQS",
+        "MetricName": "ApproximateNumberOfMessagesVisible",
+        "Dimensions": [
+          {
+            "Value": {
+              "Ref": "QueueToMonitor"
+            },
+            "Name": "QueueName"
+          }
+        ],
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "1",
+        "Threshold": "10"
+      },
+      "Type": "AWS::CloudWatch::Alarm"
+    },
+    "ScaleUpPolicy": {
+      "Properties": {
+        "ScalingAdjustment": "1",
+        "Cooldown": "1",
+        "AutoScalingGroupName": {
+          "Ref": "GroupToScale"
+        },
+        "AdjustmentType": "ChangeInCapacity"
+      },
+      "Type": "AWS::AutoScaling::ScalingPolicy"
+    }
+  },
+  "Parameters": {
+    "GroupToScale": {
+      "Type": "String",
+      "Description": "The ARN of the AS group that should be scaled if alarm triggers"
+    },
+    "QueueToMonitor": {
+      "Type": "String",
+      "Description": "The queue that should be monitored"
+    }
+  },
+  "Description": "Create a cloudwatch policy to autoscale a group based on SQS queue count",
+  "AWSTemplateFormatVersion": "2010-09-09"
+}

@@ -1,0 +1,67 @@
+{
+  "Outputs": {
+    "QueueARN": {
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkerQueue",
+          "Arn"
+        ]
+      },
+      "Description": "ARN of newly created SQS Queue"
+    },
+    "QueueURL": {
+      "Value": {
+        "Ref": "WorkerQueue"
+      },
+      "Description": "URL of newly created SQS Queue"
+    }
+  },
+  "Resources": {
+    "WorkerQueuePolicy": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Resource": {
+                "Fn::GetAtt": [
+                  "WorkerQueue",
+                  "Arn"
+                ]
+              },
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
+              ],
+              "Principal": {
+                "AWS": {
+                  "Ref": "InstanceProfile"
+                }
+              },
+              "Effect": "Allow",
+              "Sid": "ConsumeMessages"
+            }
+          ],
+          "Id": "ConsumeMessagesFromInputQueue",
+          "Version": "2012-10-17"
+        },
+        "Queues": [
+          {
+            "Ref": "WorkerQueue"
+          }
+        ]
+      },
+      "Type": "AWS::SQS::QueuePolicy"
+    },
+    "WorkerQueue": {
+      "Type": "AWS::SQS::Queue"
+    }
+  },
+  "Parameters": {
+    "InstanceProfile": {
+      "Description": "InstanceProfile to allow access to Send/Receive to this queue",
+      "Type": "String"
+    }
+  },
+  "Description": "Creates a randomly named SQS queue for use with a worker node",
+  "AWSTemplateFormatVersion": "2010-09-09"
+}
